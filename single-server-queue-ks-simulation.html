@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Single-Server Queue Simulation & Full K-S Test</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1d4ed8;
+            --primary-hover: #1e40af;
+            --primary-soft: #eff6ff;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #475569;
+            --border: #cbd5e1;
+            --border-light: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 32px 20px;
+            direction: ltr;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1180px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #0f172a;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            letter-spacing: -0.015em;
+        }
+
+        h2, h3, h4 {
+            color: #1e3a8a;
+            font-weight: 600;
+        }
+
+        h3 {
+            font-size: 1.15rem;
+            margin-bottom: 12px;
+        }
+
+        h4 {
+            font-size: 1.02rem;
+            margin-bottom: 10px;
+        }
+
+        .step-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 28px;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.06), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
+        }
+
+        .step-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            border-bottom: 2px solid var(--border-light);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: #334155;
+        }
+
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            max-width: 280px;
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+            color: var(--text);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="number"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: inherit;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 2px 4px rgba(29, 78, 216, 0.2);
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+            background: #f8fafc;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+        }
+
+        .grid-inputs input {
+            width: 100%;
+            text-align: center;
+            padding: 7px 4px;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            font-size: 0.9rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .tables-container {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .table-wrapper {
+            flex: 1;
+            min-width: 320px;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        th, td {
+            border-bottom: 1px solid var(--border-light);
+            padding: 10px 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: #334155;
+            font-weight: 700;
+            font-size: 0.84rem;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        tbody tr:hover {
+            background-color: var(--primary-soft);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .charts-container {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin-top: 22px;
+        }
+
+        .chart-box {
+            flex: 1;
+            min-width: 320px;
+            background: #ffffff;
+            padding: 16px;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+        }
+
+        .math-box {
+            background-color: #f8fafc;
+            padding: 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.9rem;
+            direction: ltr;
+            text-align: left;
+            margin-top: 8px;
+            white-space: pre-wrap;
+            color: #1e293b;
+            line-height: 1.7;
+        }
+
+        .result-highlight {
+            background-color: var(--primary-soft);
+            border: 1px solid #bfdbfe;
+            border-left: 5px solid var(--primary);
+            padding: 18px 22px;
+            margin-top: 18px;
+            border-radius: 12px;
+            font-size: 0.94rem;
+        }
+
+        .result-highlight p {
+            margin: 6px 0;
+        }
+
+        .result-highlight hr {
+            border: none;
+            border-top: 1px solid #bfdbfe;
+            margin: 12px 0;
+        }
+
+        .result-highlight ul {
+            margin: 10px 0 0 0;
+            padding-left: 20px;
+        }
+
+        .result-highlight li {
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Complete Single-Server Queue Simulation & Advanced K-S Tests</h1>
+
+    <!-- Step 1: Get sample size and generate input fields -->
+    <div class="step-card">
+        <div class="step-title">Step 1: Initial Time Study Data Entry</div>
+        <div class="input-group">
+            <label for="sampleSize">Number of Time Study Observations (n):</label>
+            <input type="number" id="sampleSize" value="20" min="5" max="50">
+        </div>
+        <button onclick="generateDataFields()">Generate Input Fields</button>
+
+        <div id="dataInputsContainer" style="display:none; margin-top: 24px;">
+            <div class="tables-container">
+                <div class="table-wrapper">
+                    <h3>Inter-Arrival Times (A_i)</h3>
+                    <div id="arrivalFields" class="grid-inputs"></div>
+                </div>
+                <div class="table-wrapper">
+                    <h3>Service Times (S_i)</h3>
+                    <div id="serviceFields" class="grid-inputs"></div>
+                </div>
+            </div>
+            <br>
+            <button onclick="processStep2And3()">Fit Distributions & Display Complete K-S Tables</button>
+        </div>
+    </div>
+
+    <!-- Steps 2 & 3: Distribution analysis and full K-S test tables -->
+    <div id="step23Container" class="step-card" style="display:none;">
+        <div class="step-title">Steps 2 & 3: Descriptive Statistics, Histograms & K-S Test (D+ and D- Calculations)</div>
+        
+        <div class="tables-container">
+            <div class="table-wrapper">
+                <h4>Descriptive Statistics of Inter-Arrival Times</h4>
+                <div id="arrStats" class="math-box"></div>
+            </div>
+            <div class="table-wrapper">
+                <h4>Descriptive Statistics of Service Times</h4>
+                <div id="servStats" class="math-box"></div>
+            </div>
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-box">
+                <canvas id="arrChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <canvas id="servChart"></canvas>
+            </div>
+        </div>
+
+        <h3 style="margin-top:28px;">K-S Goodness-of-Fit Test Table for Inter-Arrival Times</h3>
+        <div class="table-scroll">
+            <table id="ksArrTable">
+                <thead>
+                    <tr>
+                        <th>i (Rank)</th>
+                        <th>A_(i) (Sorted)</th>
+                        <th>F_0(A_i) = i/n</th>
+                        <th>F(A_i)</th>
+                        <th>D_i+ = i/n - F</th>
+                        <th>D_i- = F - (i-1)/n</th>
+                        <th>D_i = max(D+, D-)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div id="ksArrResult" class="result-highlight"></div>
+
+        <h3 style="margin-top:28px;">K-S Goodness-of-Fit Test Table for Service Times</h3>
+        <div class="table-scroll">
+            <table id="ksServTable">
+                <thead>
+                    <tr>
+                        <th>i (Rank)</th>
+                        <th>S_(i) (Sorted)</th>
+                        <th>F_0(S_i) = i/n</th>
+                        <th>F(S_i)</th>
+                        <th>D_i+ = i/n - F</th>
+                        <th>D_i- = F - (i-1)/n</th>
+                        <th>D_i = max(D+, D-)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div id="ksServResult" class="result-highlight"></div>
+    </div>
+
+    <!-- Step 4: Manual entry of random numbers and parameters -->
+    <div id="step4ManualContainer" class="step-card" style="display:none;">
+        <div class="step-title">Step 4: Manual Entry of Random Numbers (R) and Distribution Parameters</div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px; margin-bottom: 20px;">
+            <div class="input-group">
+                <label>Arrival Rate (Lambda - λ):</label>
+                <input type="number" step="0.0001" id="manualLambda" value="0.1">
+            </div>
+            <div class="input-group">
+                <label>Service Rate (Mu - μ):</label>
+                <input type="number" step="0.0001" id="manualMu" value="0.125">
+            </div>
+            <div class="input-group">
+                <label>Number of Customers in Simulation:</label>
+                <input type="number" id="manualSimCount" value="10" min="1" max="100">
+            </div>
+        </div>
+        
+        <button onclick="generateRandomInputFields()">Generate Random Number Fields</button>
+
+        <div id="manualRandomFieldsContainer" style="display:none; margin-top: 24px;">
+            <div class="tables-container">
+                <div class="table-wrapper">
+                    <h3>Arrival Random Numbers (R_arr) between 0 and 1</h3>
+                    <div id="manualRArrFields" class="grid-inputs"></div>
+                </div>
+                <div class="table-wrapper">
+                    <h3>Service Random Numbers (R_serv) between 0 and 1</h3>
+                    <div id="manualRServFields" class="grid-inputs"></div>
+                </div>
+            </div>
+            <br>
+            <button onclick="generateVariatesAndSimulateManual()">Generate Random Variates (Inverse Transform) & Run Simulation</button>
+        </div>
+    </div>
+
+    <!-- Steps 5 & 6: Random variate mapping table and simulation -->
+    <div id="step6Container" class="step-card" style="display:none;">
+        <div class="step-title">Step 5: Random Numbers & Random Variates Table (Formula: X = -1/rate * ln(1 - R))</div>
+        
+        <div class="table-scroll">
+            <table id="variatesTable">
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>R_arr</th>
+                        <th>1 - R_arr</th>
+                        <th>Generated Inter-Arrival Time</th>
+                        <th>R_serv</th>
+                        <th>1 - R_serv</th>
+                        <th>Generated Service Time</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <h3 style="margin-top:32px;">Step 6: Single-Server Queue Simulation Table & Performance Analysis (KPIs)</h3>
+        <div class="table-scroll">
+            <table id="simTable">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>R_arr</th>
+                        <th>Inter-Arrival Time</th>
+                        <th>Arrival Time</th>
+                        <th>R_serv</th>
+                        <th>Service Time</th>
+                        <th>Service Start</th>
+                        <th>Service End</th>
+                        <th>Queue Wait</th>
+                        <th>Time in System</th>
+                        <th>Server Idle Time</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="result-highlight" id="kpiResults"></div>
+    </div>
+</div>
+
+<script>
+    // Note: Inter-arrival values were increased by 10% to reduce average queue length.
+    const defaultArrivals = [12.98, 14.52, 11.44, 13.31, 12.43, 15.51, 13.09, 13.97, 10.89, 13.53, 12.76, 11.88, 14.96, 13.42, 12.21, 16.17, 12.87, 13.64, 10.23, 14.19];
+    const defaultServices = [8.2, 7.4, 9.1, 7.8, 8.6, 6.6, 8.0, 7.7, 9.8, 7.2, 8.3, 6.9, 8.1, 8.8, 7.6, 6.2, 8.0, 7.9, 9.4, 8.4];
+
+    let arrChartInstance = null;
+    let servChartInstance = null;
+
+    let fittedLambda = 0;
+    let fittedMu = 0;
+
+    function generateDataFields() {
+        const n = parseInt(document.getElementById('sampleSize').value);
+        const arrContainer = document.getElementById('arrivalFields');
+        const servContainer = document.getElementById('serviceFields');
+        
+        arrContainer.innerHTML = '';
+        servContainer.innerHTML = '';
+
+        for (let i = 0; i < n; i++) {
+            const valArr = defaultArrivals[i] !== undefined ? defaultArrivals[i] : (Math.random() * 2 + 0.5).toFixed(1);
+            const valServ = defaultServices[i] !== undefined ? defaultServices[i] : (Math.random() * 3 + 1).toFixed(1);
+
+            arrContainer.innerHTML += `<input type="number" step="0.1" class="arr-input" value="${valArr}">`;
+            servContainer.innerHTML += `<input type="number" step="0.1" class="serv-input" value="${valServ}">`;
+        }
+
+        document.getElementById('dataInputsContainer').style.display = 'block';
+    }
+
+    function processStep2And3() {
+        const arrInputs = Array.from(document.querySelectorAll('.arr-input')).map(e => parseFloat(e.value));
+        const servInputs = Array.from(document.querySelectorAll('.serv-input')).map(e => parseFloat(e.value));
+        const n = arrInputs.length;
+
+        const sumArr = arrInputs.reduce((a, b) => a + b, 0);
+        const meanArr = sumArr / n;
+        const varianceArr = arrInputs.reduce((a, b) => a + Math.pow(b - meanArr, 2), 0) / (n - 1);
+        const stdArr = Math.sqrt(varianceArr);
+        fittedLambda = 1 / meanArr;
+
+        const sumServ = servInputs.reduce((a, b) => a + b, 0);
+        const meanServ = sumServ / n;
+        const varianceServ = servInputs.reduce((a, b) => a + Math.pow(b - meanServ, 2), 0) / (n - 1);
+        const stdServ = Math.sqrt(varianceServ);
+        fittedMu = 1 / meanServ;
+
+        document.getElementById('arrStats').innerText = 
+            `Sum = ${sumArr.toFixed(2)}\nMean (X_bar) = ${meanArr.toFixed(4)}\nVar (S^2) = ${varianceArr.toFixed(4)}\nStd (S) = ${stdArr.toFixed(4)}\n` +
+            `Exponential Fit Condition: S ≈ X_bar (${stdArr.toFixed(2)} vs ${meanArr.toFixed(2)})\n` +
+            `Rate Parameter (Lambda) = 1 / ${meanArr.toFixed(4)} = ${fittedLambda.toFixed(4)}`;
+
+        document.getElementById('servStats').innerText = 
+            `Sum = ${sumServ.toFixed(2)}\nMean (X_bar) = ${meanServ.toFixed(4)}\nVar (S^2) = ${varianceServ.toFixed(4)}\nStd (S) = ${stdServ.toFixed(4)}\n` +
+            `Exponential Fit Condition: S ≈ X_bar (${stdServ.toFixed(2)} vs ${meanServ.toFixed(2)})\n` +
+            `Rate Parameter (Mu) = 1 / ${meanServ.toFixed(4)} = ${fittedMu.toFixed(4)}`;
+
+        // Populate calculated values into manual input fields as initial suggestions
+        document.getElementById('manualLambda').value = fittedLambda.toFixed(4);
+        document.getElementById('manualMu').value = fittedMu.toFixed(4);
+
+        renderHistogram('arrChart', arrInputs, 'Inter-Arrival Times Histogram', arrChartInstance, (chart) => arrChartInstance = chart);
+        renderHistogram('servChart', servInputs, 'Service Times Histogram', servChartInstance, (chart) => servChartInstance = chart);
+
+        renderKSDistributionTable('#ksArrTable', arrInputs, x => 1 - Math.exp(-fittedLambda * x), fittedLambda, 'Lambda', 'ksArrResult');
+        renderKSDistributionTable('#ksServTable', servInputs, x => 1 - Math.exp(-fittedMu * x), fittedMu, 'Mu', 'ksServResult');
+
+        document.getElementById('step23Container').style.display = 'block';
+        document.getElementById('step4ManualContainer').style.display = 'block';
+    }
+
+    function renderKSDistributionTable(tableSelector, data, cdfFunc, paramVal, paramName, resultDivId) {
+        const sorted = [...data].sort((a, b) => a - b);
+        const n = sorted.length;
+        const tbody = document.querySelector(`${tableSelector} tbody`);
+        tbody.innerHTML = '';
+
+        let dPlusMax = 0;
+        let dMinusMax = 0;
+        let dMaxTotal = 0;
+
+        for (let i = 0; i < n; i++) {
+            const x = sorted[i];
+            const rank = i + 1;
+            const f0 = rank / n;
+            const f = cdfFunc(x);
+
+            const dPlus = f0 - f;
+            const dMinus = f - ((rank - 1) / n);
+            const di = Math.max(dPlus, dMinus);
+
+            if (dPlus > dPlusMax) dPlusMax = dPlus;
+            if (dMinus > dMinusMax) dMinusMax = dMinus;
+            if (di > dMaxTotal) dMaxTotal = di;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${rank}</td>
+                    <td>${x.toFixed(2)}</td>
+                    <td>${f0.toFixed(3)}</td>
+                    <td>${f.toFixed(3)}</td>
+                    <td>${dPlus.toFixed(3)}</td>
+                    <td>${dMinus.toFixed(3)}</td>
+                    <td><b>${di.toFixed(3)}</b></td>
+                </tr>
+            `;
+        }
+
+        const dCrit = getKSCriticalValue(n);
+
+        document.getElementById(resultDivId).innerHTML = `
+            <p><b>Null Hypothesis (H0):</b> Data follows an Exponential distribution with rate ${paramName} = ${paramVal.toFixed(4)}.</p>
+            <p><b>Alternative Hypothesis (H1):</b> Data does not follow an Exponential distribution.</p>
+            <p><b>D Calculations:</b> D+ = ${dPlusMax.toFixed(3)} , D- = ${dMinusMax.toFixed(3)}</p>
+            <p><b>Overall Test Statistic (D_cal = max(D+, D-)):</b> <span style="color:#1d4ed8; font-weight:bold;">${dMaxTotal.toFixed(3)}</span></p>
+            <p><b>Smirnov Critical Value (D_crit at α=0.05):</b> ${dCrit.toFixed(3)}</p>
+            <hr>
+            <p><b>Conclusion:</b> ${dMaxTotal < dCrit 
+                ? `<b style="color:#059669;">Since D_cal (${dMaxTotal.toFixed(3)}) < D_crit (${dCrit.toFixed(3)}), H0 is not rejected (Exponential distribution is confirmed).</b>` 
+                : `<b style="color:#dc2626;">Since D_cal (${dMaxTotal.toFixed(3)}) >= D_crit (${dCrit.toFixed(3)}), H0 is rejected.</b>`
+            }</p>
+        `;
+    }
+
+    function renderHistogram(canvasId, data, label, chartRef, setChartRef) {
+        if (chartRef) chartRef.destroy();
+
+        const min = Math.min(...data);
+        const max = Math.max(...data);
+        const binsCount = 5;
+        const step = (max - min) / binsCount;
+        
+        let bins = new Array(binsCount).fill(0);
+        let labels = [];
+
+        for (let i = 0; i < binsCount; i++) {
+            labels.push(`${(min + i * step).toFixed(1)} - ${(min + (i + 1) * step).toFixed(1)}`);
+        }
+
+        data.forEach(val => {
+            let idx = Math.floor((val - min) / step);
+            if (idx >= binsCount) idx = binsCount - 1;
+            bins[idx]++;
+        });
+
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const newChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: bins,
+                    backgroundColor: 'rgba(29, 78, 216, 0.7)',
+                    borderColor: 'rgba(29, 78, 216, 1)',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+        setChartRef(newChart);
+    }
+
+    function generateRandomInputFields() {
+        const n = parseInt(document.getElementById('manualSimCount').value) || 10;
+        const rArrContainer = document.getElementById('manualRArrFields');
+        const rServContainer = document.getElementById('manualRServFields');
+        
+        rArrContainer.innerHTML = '';
+        rServContainer.innerHTML = '';
+
+        for (let i = 0; i < n; i++) {
+            // Generate default random numbers between 0.01 and 0.99 for convenience
+            const defaultRArr = (Math.random() * 0.98 + 0.01).toFixed(2);
+            const defaultRServ = (Math.random() * 0.98 + 0.01).toFixed(2);
+            
+            rArrContainer.innerHTML += `<input type="number" step="0.01" min="0" max="1" class="manual-r-arr" value="${defaultRArr}">`;
+            rServContainer.innerHTML += `<input type="number" step="0.01" min="0" max="1" class="manual-r-serv" value="${defaultRServ}">`;
+        }
+        document.getElementById('manualRandomFieldsContainer').style.display = 'block';
+    }
+
+    function generateVariatesAndSimulateManual() {
+        const manualLambda = parseFloat(document.getElementById('manualLambda').value);
+        const manualMu = parseFloat(document.getElementById('manualMu').value);
+
+        if (!(manualLambda > 0) || !(manualMu > 0)) {
+            alert('Values of λ and μ must be greater than zero.');
+            return;
+        }
+
+        const rArrInputs = Array.from(document.querySelectorAll('.manual-r-arr')).map(e => parseFloat(e.value));
+        const rServInputs = Array.from(document.querySelectorAll('.manual-r-serv')).map(e => parseFloat(e.value));
+
+        const vTableBody = document.querySelector('#variatesTable tbody');
+        const simTableBody = document.querySelector('#simTable tbody');
+        vTableBody.innerHTML = '';
+        simTableBody.innerHTML = '';
+
+        let lastArrival = 0;
+        let totalWq = 0;
+        let totalW = 0;
+        let totalIdle = 0;
+        let lastEndService = 0;
+
+        for (let i = 0; i < rArrInputs.length; i++) {
+            // Prevent log(0) if user enters 1
+            const rA = rArrInputs[i] >= 1 ? 0.99 : (rArrInputs[i] <= 0 ? 0.01 : rArrInputs[i]);
+            const rS = rServInputs[i] >= 1 ? 0.99 : (rServInputs[i] <= 0 ? 0.01 : rServInputs[i]);
+
+            const oneMinusRa = 1 - rA;
+            const oneMinusRs = 1 - rS;
+
+            // Generate random variate using inverse transform method: -1/rate * ln(1 - R)
+            const interArrival = i === 0 ? 0 : - (1 / manualLambda) * Math.log(oneMinusRa);
+            const serviceTime = - (1 / manualMu) * Math.log(oneMinusRs);
+
+            // Populate variates mapping table
+            vTableBody.innerHTML += `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${rA.toFixed(2)}</td>
+                    <td>${oneMinusRa.toFixed(2)}</td>
+                    <td><b>${interArrival.toFixed(2)}</b></td>
+                    <td>${rS.toFixed(2)}</td>
+                    <td>${oneMinusRs.toFixed(2)}</td>
+                    <td><b>${serviceTime.toFixed(2)}</b></td>
+                </tr>
+            `;
+
+            // Populate simulation table
+            const arrivalTime = lastArrival + interArrival;
+            lastArrival = arrivalTime;
+
+            const startService = Math.max(arrivalTime, lastEndService);
+            const endService = startService + serviceTime;
+            
+            const wq = startService - arrivalTime;
+            const w = endService - arrivalTime;
+            const idle = i === 0 ? arrivalTime : Math.max(0, arrivalTime - lastEndService);
+
+            totalWq += wq;
+            totalW += w;
+            totalIdle += idle;
+            lastEndService = endService;
+
+            simTableBody.innerHTML += `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${rA.toFixed(2)}</td>
+                    <td>${interArrival.toFixed(2)}</td>
+                    <td>${arrivalTime.toFixed(2)}</td>
+                    <td>${rS.toFixed(2)}</td>
+                    <td>${serviceTime.toFixed(2)}</td>
+                    <td>${startService.toFixed(2)}</td>
+                    <td>${endService.toFixed(2)}</td>
+                    <td>${wq.toFixed(2)}</td>
+                    <td>${w.toFixed(2)}</td>
+                    <td>${idle.toFixed(2)}</td>
+                </tr>
+            `;
+        }
+
+        const count = rArrInputs.length;
+        document.getElementById('kpiResults').innerHTML = `
+            <h3 style="margin-top:0;">Simulation Performance Analysis (KPIs)</h3>
+            <ul>
+                <li><b>Average Waiting Time in Queue (Wq_bar):</b> ${(totalWq / count).toFixed(2)} minutes</li>
+                <li><b>Average Time in System (W_bar):</b> ${(totalW / count).toFixed(2)} minutes</li>
+                <li><b>Total Server Idle Time:</b> ${totalIdle.toFixed(2)} minutes</li>
+                <li><b>Server Utilization Rate:</b> ${(((lastEndService - totalIdle) / lastEndService) * 100).toFixed(1)}%</li>
+            </ul>
+        `;
+
+        document.getElementById('step6Container').style.display = 'block';
+    }
+
+    function getKSCriticalValue(n) {
+        const table = {
+            5: 0.565, 6: 0.521, 7: 0.486, 8: 0.457, 9: 0.432, 10: 0.410,
+            11: 0.391, 12: 0.375, 13: 0.361, 14: 0.349, 15: 0.338, 16: 0.328,
+            17: 0.318, 18: 0.309, 19: 0.301, 20: 0.294, 25: 0.270, 30: 0.248
+        };
+        if (table[n]) return table[n];
+        return 1.36 / Math.sqrt(n);
+    }
+
+    window.onload = generateDataFields;
+</script>
+
+</body>
+</html>

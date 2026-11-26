@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi-Square Test for Workstation Time Study</title>
+    <style>
+        :root {
+            --primary: #0f766e;
+            --primary-hover: #115e59;
+            --bg-page: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-subtle: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #cbd5e1;
+            --success-bg: #ecfdf5;
+            --success-border: #10b981;
+            --success-text: #065f46;
+            --danger-bg: #fef2f2;
+            --danger-border: #ef4444;
+            --danger-text: #991b1b;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.65;
+            padding: 32px 20px;
+            margin: 0;
+            font-size: 15px;
+        }
+
+        .container {
+            max-width: 940px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
+            border: 1px solid #e2e8f0;
+        }
+
+        h2 {
+            color: #0f172a;
+            font-size: 1.55rem;
+            font-weight: 700;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 14px;
+            margin-top: 0;
+            margin-bottom: 24px;
+            letter-spacing: -0.01em;
+        }
+
+        h3 {
+            color: var(--primary);
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-top: 28px;
+            margin-bottom: 12px;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+            background: var(--bg-subtle);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: #334155;
+        }
+
+        input {
+            padding: 9px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 100px;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            background-color: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+        }
+
+        button {
+            padding: 10px 22px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: inherit;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 2px 4px rgba(15, 118, 110, 0.2);
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            margin-top: 14px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            direction: ltr;
+            font-size: 0.92rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: #334155;
+            font-weight: 700;
+            font-size: 0.88rem;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        tbody tr:hover {
+            background-color: #f0fdfa;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .result-box, .step-box {
+            margin-top: 24px;
+            padding: 20px 24px;
+            border-radius: 12px;
+        }
+
+        .result-box {
+            background-color: var(--success-bg);
+            border: 1px solid #a7f3d0;
+            border-left: 5px solid var(--success-border);
+            color: var(--success-text);
+            font-size: 0.98rem;
+        }
+
+        .reject {
+            background-color: var(--danger-bg);
+            border: 1px solid #fecaca;
+            border-left-color: var(--danger-border);
+            color: var(--danger-text);
+        }
+
+        .step-box {
+            background-color: var(--bg-subtle);
+            border: 1px solid #e2e8f0;
+        }
+
+        .step-box h3 {
+            margin-top: 0;
+        }
+
+        .step-box ol {
+            margin-top: 12px;
+            padding-left: 22px;
+            margin-bottom: 0;
+        }
+
+        .step-box li {
+            margin-bottom: 14px;
+            font-size: 0.94rem;
+            color: #334155;
+        }
+
+        .step-box code {
+            background-color: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 5px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.88rem;
+            color: #0f172a;
+        }
+
+        .data-display {
+            word-wrap: break-word;
+            background: var(--bg-subtle);
+            padding: 14px 18px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.92rem;
+            color: #334155;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Data Generation & Complete Chi-Square Test Steps (Time Study)</h2>
+    
+    <div class="input-group">
+        <div>
+            <label for="numData">Number of Time Study Observations (n): </label>
+            <input type="number" id="numData" value="50" min="10">
+        </div>
+        <div>
+            <label for="lambdaInput">Hypothesized Distribution Mean (λ): </label>
+            <input type="number" id="lambdaInput" value="4" min="1" step="0.5">
+        </div>
+        <button onclick="runAnalysis()">Generate Data & Run Test</button>
+    </div>
+
+    <div id="outputArea" style="display: none;">
+        <h3>1. Generated Data</h3>
+        <div class="data-display" id="rawData"></div>
+
+        <h3>2. Frequency Table and Preliminary Calculations</h3>
+        <div class="table-wrapper">
+            <table id="freqTable">
+                <thead>
+                    <tr>
+                        <th>Value (x)</th>
+                        <th>Observed Frequency (O)</th>
+                        <th>Probability P(x)</th>
+                        <th>Expected Frequency (E)</th>
+                        <th>Value (O-E)²/E</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div id="stepsArea" class="step-box"></div>
+        <div id="conclusion" class="result-box"></div>
+    </div>
+</div>
+
+<script>
+    const chiSquareCritical = {
+        1: 3.841, 2: 5.991, 3: 7.815, 4: 9.488, 5: 11.070,
+        6: 12.592, 7: 14.067, 8: 15.507, 9: 16.919, 10: 18.307,
+        11: 19.675, 12: 21.026, 13: 22.362, 14: 23.685, 15: 24.996,
+        16: 26.296, 17: 27.587, 18: 28.869, 19: 30.144, 20: 31.410
+    };
+
+    function generatePoisson(lambda) {
+        let L = Math.exp(-lambda);
+        let k = 0, p = 1;
+        do {
+            k++;
+            p *= Math.random();
+        } while (p > L);
+        return k - 1;
+    }
+
+    function factorial(n) {
+        if (n === 0 || n === 1) return 1;
+        let res = 1;
+        for (let i = 2; i <= n; i++) res *= i;
+        return res;
+    }
+
+    function poissonProb(x, lambda) {
+        return (Math.exp(-lambda) * Math.pow(lambda, x)) / factorial(x);
+    }
+
+    function runAnalysis() {
+        const n = parseInt(document.getElementById('numData').value);
+        const inputLambda = parseFloat(document.getElementById('lambdaInput').value);
+        
+        // Generate data
+        let data = [];
+        let sum = 0;
+        for (let i = 0; i < n; i++) {
+            let val = generatePoisson(inputLambda);
+            data.push(val);
+            sum += val;
+        }
+        
+        document.getElementById('rawData').innerText = data.join(" , ");
+        let sampleMean = sum / n;
+
+        // Calculate frequencies
+        let frequencies = {};
+        let maxVal = 0;
+        data.forEach(val => {
+            frequencies[val] = (frequencies[val] || 0) + 1;
+            if (val > maxVal) maxVal = val;
+        });
+
+        let tbody = document.querySelector('#freqTable tbody');
+        tbody.innerHTML = '';
+        
+        let chiSquareCalc = 0;
+        let numBins = 0;
+
+        for (let x = 0; x <= maxVal; x++) {
+            let O = frequencies[x] || 0;
+            let P = poissonProb(x, sampleMean);
+            
+            if (x === maxVal) {
+                let currentSumProb = 0;
+                for (let j = 0; j < maxVal; j++) currentSumProb += poissonProb(j, sampleMean);
+                P = 1 - currentSumProb;
+            }
+            
+            let E = n * P;
+            if(E === 0) continue; 
+            
+            let chiPart = Math.pow(O - E, 2) / E;
+            chiSquareCalc += chiPart;
+            numBins++;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${x}</td>
+                    <td>${O}</td>
+                    <td>${P.toFixed(4)}</td>
+                    <td>${E.toFixed(2)}</td>
+                    <td>${chiPart.toFixed(4)}</td>
+                </tr>
+            `;
+        }
+
+        let df = numBins - 2;
+        let conclusionDiv = document.getElementById('conclusion');
+        let stepsArea = document.getElementById('stepsArea');
+        
+        conclusionDiv.style.display = 'block';
+        stepsArea.style.display = 'block';
+
+        if (df < 1) {
+            stepsArea.style.display = 'none';
+            conclusionDiv.className = 'result-box reject';
+            conclusionDiv.innerHTML = `<strong>Error:</strong> Data variability is too low to perform the Chi-Square test (degrees of freedom less than 1). Please increase the number of observations.`;
+        } else {
+            let criticalValue = chiSquareCritical[df] || (df + 2 * Math.sqrt(2 * df)); 
+            
+            // Dynamically generate step-by-step instructions
+            let stepsHtml = `<h3>3. Step-by-Step Chi-Square Test Procedure</h3>`;
+            stepsHtml += `<ol>`;
+            stepsHtml += `<li><b>Step 1 - Define Statistical Hypotheses:</b><br>
+                          <b>H0:</b> The workstation time study data follows a Poisson distribution.<br>
+                          <b>H1:</b> The workstation time study data does not follow a Poisson distribution.</li>`;
+            
+            stepsHtml += `<li><b>Step 2 - Estimate the Unknown Parameter:</b><br>
+                          Since the true population mean (λ) is unknown in this problem, we must estimate it from the sample. The mean of the ${n} generated observations is: <b>λ = ${sampleMean.toFixed(2)}</b></li>`;
+            
+            stepsHtml += `<li><b>Step 3 - Calculate Expected Frequencies (E):</b><br>
+                          Using the Poisson formula, the probability of each event is calculated and multiplied by the total number of observations (n=${n}) to obtain column E in the table above.</li>`;
+            
+            stepsHtml += `<li><b>Step 4 - Compute the Test Statistic (X²):</b><br>
+                          For each row in the table, the formula <code>(O - E)² / E</code> is calculated. The sum of these values gives the Chi-Square test statistic:<br>
+                          <b>Calculated X² = ${chiSquareCalc.toFixed(4)}</b></li>`;
+            
+            stepsHtml += `<li><b>Step 5 - Determine Degrees of Freedom (df) and Critical Value:</b><br>
+                          Degrees of freedom are calculated using the formula <code>(Number of bins - 1 - Number of estimated parameters)</code>. Since we estimated the mean, an additional degree of freedom is subtracted: <code>${numBins} - 1 - 1 = ${df}</code>.<br>
+                          Referring to the Chi-Square table for significance level α = 0.05 and ${df} degrees of freedom, the critical value is: <b>${criticalValue.toFixed(3)}</b></li>`;
+            
+            let isRejected = chiSquareCalc > criticalValue;
+            stepsHtml += `<li><b>Step 6 - Comparison and Decision Making:</b><br>
+                          Now we compare the calculated value (${chiSquareCalc.toFixed(4)}) with the table critical value (${criticalValue.toFixed(3)}).<br>
+                          ${isRejected ? 'Since the calculated value is <b>greater</b> than the critical value, we fall into the rejection region.' : 'Since the calculated value is <b>less</b> than the critical value, we fall into the acceptance region.'}</li>`;
+            stepsHtml += `</ol>`;
+            
+            stepsArea.innerHTML = stepsHtml;
+
+            // Final conclusion
+            let text = `<strong>4. Final Conclusion:</strong><br><br>`;
+            if (isRejected) {
+                conclusionDiv.className = 'result-box reject';
+                text += `The null hypothesis H0 is <b>rejected</b>. At the 5% significance level, there is insufficient evidence to conclude that the time study data follows a Poisson distribution.`;
+            } else {
+                conclusionDiv.className = 'result-box';
+                text += `The null hypothesis H0 is <b>accepted</b> (not rejected). At the 5% significance level, the workstation time study data fits a Poisson distribution well.`;
+            }
+            conclusionDiv.innerHTML = text;
+        }
+
+        document.getElementById('outputArea').style.display = 'block';
+    }
+</script>
+</body>
+</html>
